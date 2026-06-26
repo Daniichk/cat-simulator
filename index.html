@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+  <title>🐱 Жизнь Кота — Выживи неделю!</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #0b0b1a;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      overflow: hidden;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      margin: 0;
+    }
+
+    #game-container {
+      width: 100%;
+      max-width: 780px;
+      height: 100vh;
+      max-height: 950px;
+      display: flex;
+      flex-direction: column;
+      background: #1a1a2e;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7), inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+      position: relative;
+    }
+
+    /* ========= HUD ========= */
+    #hud {
+      background: linear-gradient(180deg, #2b2b4a 0%, #1f1f38 100%);
+      padding: 10px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 2px solid #444;
+      z-index: 20;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #ddd;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .stat-icon {
+      font-size: 16px;
+    }
+
+    .stat-bar-outer {
+      width: 48px;
+      height: 7px;
+      background: #2a2a40;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .stat-bar-inner {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.4s;
+    }
+
+    .bar-hunger {
+      background: linear-gradient(90deg, #ff8c42, #ffaa5e);
+    }
+    .bar-energy {
+      background: linear-gradient(90deg, #5b9bd5, #7bb3e8);
+    }
+    .bar-happy {
+      background: linear-gradient(90deg, #ff6b9d, #ff8eb5);
+    }
+    .bar-patience {
+      background: linear-gradient(90deg, #ffd93d, #ffe680);
+    }
+
+    #week-progress {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #fff;
+      background: #2d2d50;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-weight: bold;
+    }
+
+    #week-bar-outer {
+      width: 70px;
+      height: 8px;
+      background: #3a3a5c;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #week-bar-inner {
+      height: 100%;
+      width: 0%;
+      background: #ffd93d;
+      border-radius: 10px;
+      transition: width 0.4s;
+    }
+
+    #time-panel {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #ffd93d;
+      font-weight: bold;
+      background: #1a1a30;
+      padding: 5px 14px;
+      border-radius: 20px;
+    }
+
+    /* ========= ROOM ========= */
+    #room {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #f5e6d3;
+      transition: background 1.2s;
+      min-height: 380px;
+      cursor: default;
+      box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.1);
+    }
+
+    #room.night {
+      background: #2a3040;
+    }
+    #room.evening {
+      background: #e0c8a8;
+    }
+
+    /* Floor */
+    #floor {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 28%;
+      background: #c4956a;
+      transition: background 1.2s;
+      border-top: 4px solid #a07850;
+      z-index: 2;
+      box-shadow: inset 0 8px 18px rgba(0, 0, 0, 0.2);
+    }
+
+    #room.night #floor {
+      background: #5a4a3a;
+      border-top-color: #3a3028;
+    }
+    #room.evening #floor {
+      background: #b88560;
+    }
+
+    #floor::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(90deg, transparent, transparent 55px, rgba(0, 0, 0, 0.05) 55px, rgba(0, 0, 0, 0.05) 57px);
+      z-index: 0;
+    }
+
+    /* Wall decoration */
+    .wall-poster {
+      position: absolute;
+      top: 18%;
+      left: 7%;
+      width: 70px;
+      height: 80px;
+      background: #e8c9a0;
+      border: 3px solid #b38b6b;
+      border-radius: 4px;
+      z-index: 1;
+      box-shadow: 2px 3px 10px rgba(0, 0, 0, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+    }
+
+    .wall-clock {
+      position: absolute;
+      top: 12%;
+      right: 18%;
+      width: 48px;
+      height: 48px;
+      background: #f9e8d5;
+      border-radius: 50%;
+      border: 4px solid #8b7355;
+      z-index: 3;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      background: radial-gradient(circle at 30% 30%, #fff5e6, #e8c9a0);
+    }
+
+    /* Window */
+    #window-frame {
+      position: absolute;
+      top: 10%;
+      right: 5%;
+      width: 110px;
+      height: 95px;
+      background: #fff;
+      border: 6px solid #8b7355;
+      border-radius: 6px;
+      z-index: 4;
+      overflow: hidden;
+      box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    #window-sky {
+      width: 100%;
+      height: 100%;
+      background: #87ceeb;
+      transition: background 1.2s;
+      position: relative;
+    }
+
+    #room.night #window-sky {
+      background: #0d0d2b;
+    }
+    #room.evening #window-sky {
+      background: linear-gradient(180deg, #ff7b42, #ffb380 60%, #ffe0c0);
+    }
+
+    .cloud {
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+      opacity: 0.7;
+      animation: driftCloud 22s linear infinite;
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: '';
+      position: absolute;
+      background: white;
+      border-radius: 50%;
+    }
+
+    .cloud1 {
+      width: 40px;
+      height: 20px;
+      top: 20%;
+      left: -50px;
+      animation-duration: 28s;
+    }
+    .cloud1::before {
+      width: 22px;
+      height: 22px;
+      top: -12px;
+      left: 8px;
+    }
+    .cloud1::after {
+      width: 18px;
+      height: 18px;
+      top: -8px;
+      left: 20px;
+    }
+
+    .cloud2 {
+      width: 35px;
+      height: 18px;
+      top: 45%;
+      left: -60px;
+      animation-duration: 24s;
+      animation-delay: 8s;
+    }
+    .cloud2::before {
+      width: 20px;
+      height: 20px;
+      top: -10px;
+      left: 6px;
+    }
+    .cloud2::after {
+      width: 16px;
+      height: 16px;
+      top: -6px;
+      left: 16px;
+    }
+
+    .bird {
+      position: absolute;
+      font-size: 18px;
+      animation: flyBird 7s linear infinite;
+      z-index: 5;
+    }
+
+    @keyframes driftCloud {
+      from { transform: translateX(0); }
+      to { transform: translateX(180px); }
+    }
+    @keyframes flyBird {
+      0% { left: -30px; top: 20%; }
+      50% { top: 40%; }
+      100% { left: 120%; top: 15%; }
+    }
+
+    /* Furniture */
+    #couch {
+      position: absolute;
+      bottom: 26%;
+      left: 4%;
+      width: 140px;
+      height: 60px;
+      background: #7b5ea7;
+      border-radius: 20px 20px 8px 8px;
+      z-index: 3;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+    }
+    #couch::before {
+      content: '';
+      position: absolute;
+      top: -22px;
+      left: 5px;
+      right: 5px;
+      height: 26px;
+      background: #9b7ec4;
+      border-radius: 14px 14px 0 0;
+    }
+    .couch-pillow {
+      position: absolute;
+      top: -12px;
+      left: 15px;
+      width: 50px;
+      height: 32px;
+      background: #b8a0d8;
+      border-radius: 12px;
+      z-index: 4;
+    }
+
+    #bowl-area {
+      position: absolute;
+      bottom: 6%;
+      left: 28%;
+      z-index: 5;
+      display: flex;
+      gap: 18px;
+      align-items: flex-end;
+    }
+    .bowl {
+      width: 40px;
+      height: 16px;
+      background: #e8c97a;
+      border-radius: 0 0 22px 22px;
+      border: 3px solid #c49a50;
+      border-top: none;
+      position: relative;
+    }
+    .bowl.water {
+      background: #8ac4e8;
+      border-color: #5a9ab8;
+    }
+    .bowl::after {
+      content: '';
+      position: absolute;
+      top: -6px;
+      left: 4px;
+      right: 4px;
+      height: 6px;
+      background: #d4a860;
+      border-radius: 10px;
+    }
+    .bowl.water::after {
+      background: #6ab0d8;
+    }
+
+    #cat-bed {
+      position: absolute;
+      bottom: 5%;
+      right: 21%;
+      width: 70px;
+      height: 38px;
+      background: #e8d5c0;
+      border-radius: 34px 34px 10px 10px;
+      z-index: 3;
+      border: 3px solid #c9a880;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.08);
+    }
+
+    #door {
+      position: absolute;
+      bottom: 0%;
+      left: 56%;
+      width: 60px;
+      height: 90px;
+      background: #8b6914;
+      border-radius: 10px 10px 0 0;
+      z-index: 3;
+      border: 4px solid #6b4f10;
+      border-bottom: none;
+    }
+    #door-handle {
+      position: absolute;
+      right: 8px;
+      top: 40px;
+      width: 10px;
+      height: 10px;
+      background: #d4a830;
+      border-radius: 50%;
+      z-index: 6;
+    }
+
+    /* Characters */
+    #human {
+      position: absolute;
+      bottom: 28%;
+      left: 42%;
+      z-index: 6;
+      font-size: 64px;
+      transition: transform 0.3s;
+      filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
+      cursor: pointer;
+    }
+
+    #human:hover {
+      transform: scale(1.05);
+    }
+
+    #human.shake {
+      animation: shakeAnim 0.4s;
+    }
+    #human.bounce {
+      animation: bounceAnim 0.5s;
+    }
+
+    #cat-container {
+      position: absolute;
+      bottom: 12%;
+      left: 48%;
+      z-index: 7;
+      transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.3));
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+    }
+
+    #cat-body {
+      font-size: 46px;
+      position: relative;
+      z-index: 2;
+    }
+
+    #cat-tail {
+      position: absolute;
+      bottom: 5px;
+      right: -18px;
+      width: 24px;
+      height: 8px;
+      background: #e67e22;
+      border-radius: 10px;
+      transform-origin: right center;
+      animation: tailWag 0.8s ease-in-out infinite alternate;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    #cat-container.at-bowl { bottom: 10%; left: 29%; }
+    #cat-container.on-couch { bottom: 40%; left: 8%; }
+    #cat-container.at-bed { bottom: 8%; left: auto; right: 23%; }
+    #cat-container.at-door { bottom: 5%; left: 54%; }
+    #cat-container.at-human { bottom: 12%; left: 42%; }
+    #cat-container.jump { animation: catJump 0.5s; }
+
+    @keyframes tailWag {
+      0% { transform: rotate(5deg); }
+      100% { transform: rotate(-15deg); }
+    }
+    @keyframes catJump {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-35px); }
+    }
+    @keyframes shakeAnim {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-10px); }
+      75% { transform: translateX(10px); }
+    }
+    @keyframes bounceAnim {
+      0%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-25px); }
+    }
+
+    /* Speech bubbles */
+    .bubble {
+      position: absolute;
+      background: #fffef0;
+      border-radius: 18px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      z-index: 15;
+      max-width: 220px;
+      text-align: center;
+      pointer-events: none;
+      line-height: 1.5;
+      border: 2px solid #e0d6b0;
+    }
+
+    .bubble.human-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 14px solid #e0d6b0;
+    }
+
+    .thought-bubble {
+      background: #fff;
+      border: 2px dashed #aaa;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+    }
+
+    .cat-bubble {
+      background: #ffeef8;
+      border-color: #f0c8d8;
+    }
+
+    /* Controls */
+    #controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, #2b2b4a, #1f1f38);
+      border-top: 2px solid #444;
+      justify-content: center;
+      z-index: 20;
+    }
+
+    .action-btn {
+      padding: 10px 14px;
+      border-radius: 30px;
+      border: 2px solid #555;
+      background: #34345a;
+      color: #eee;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+      white-space: nowrap;
+      font-family: inherit;
+      letter-spacing: 0.3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .action-btn:hover {
+      background: #4a4a70;
+      border-color: #999;
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .action-btn:active {
+      transform: scale(0.92);
+    }
+
+    .correct-flash {
+      background: #4caf50 !important;
+      border-color: #81c784 !important;
+      animation: pulse 0.5s;
+    }
+    .wrong-flash {
+      background: #e53935 !important;
+      border-color: #ef5350 !important;
+      animation: shakeAnim 0.3s;
+    }
+
+    #fast-forward-btn {
+      padding: 10px 22px;
+      border-radius: 30px;
+      border: 2px solid #ffd93d;
+      background: #3a3520;
+      color: #ffd93d;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.6); }
+      50% { box-shadow: 0 0 0 22px rgba(76, 175, 80, 0); }
+    }
+
+    .floating-particle {
+      position: absolute;
+      background: rgba(255, 240, 200, 0.25);
+      border-radius: 50%;
+      animation: floatUp 6s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(1); opacity: 0; }
+      10% { opacity: 0.5; }
+      90% { opacity: 0.5; }
+      100% { transform: translateY(-120px) scale(0.4); opacity: 0; }
+    }
+
+    /* Overlay */
+    #overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      backdrop-filter: blur(5px);
+    }
+    #overlay.hidden {
+      display: none;
+    }
+    #overlay h2 {
+      color: #ffd93d;
+      font-size: 30px;
+    }
+    #overlay p {
+      color: #ddd;
+      max-width: 440px;
+      text-align: center;
+      line-height: 1.6;
+    }
+    #overlay button {
+      padding: 14px 36px;
+      border-radius: 30px;
+      background: #ffd93d;
+      color: #1a1a2e;
+      font-weight: bold;
+      font-size: 18px;
+      border: none;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    @media (max-width: 550px) {
+      .action-btn {
+        padding: 7px 10px;
+        font-size: 11px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="game-container">
+  <div id="hud">
+    <div class="stats-row">
+      <div class="stat-item"><span class="stat-icon">🍖</span><div class="stat-bar-outer"><div class="stat-bar-inner bar-hunger" id="bar-hunger" style="width:70%"></div></div></div>
+      <div class="stat-item"><span class="stat-icon">⚡</span><div class="stat-bar-outer"><div class="stat-bar-inner bar-energy" id="bar-energy" style="width:80%"></div></div></div>
+      <div class="stat-item"><span class="stat-icon">😸</span><div class="stat-bar-outer"><div class="stat-bar-inner bar-happy" id="bar-happy" style="width:75%"></div></div></div>
+      <div class="stat-item"><span class="stat-icon">💛</span><div class="stat-bar-outer"><div class="stat-bar-inner bar-patience" id="bar-patience" style="width:90%"></div></div></div>
+    </div>
+    <div id="week-progress">
+      <span>📅 День</span> <span id="day-num">1</span><span>/7</span>
+      <div id="week-bar-outer"><div id="week-bar-inner" style="width:14%"></div></div>
+    </div>
+    <div id="time-panel">
+      <span id="period-icon">☀️</span> <span id="period-text">Утро</span>
+    </div>
+  </div>
+
+  <div id="room">
+    <div id="floor"></div>
+    <div class="wall-poster">🐟</div>
+    <div class="wall-clock">🕒</div>
+    <div id="window-frame">
+      <div id="window-sky">
+        <div class="cloud cloud1"></div>
+        <div class="cloud cloud2"></div>
+        <div class="bird" style="top:25%;">🐦</div>
+      </div>
+    </div>
+    <div id="couch"><div class="couch-pillow"></div></div>
+    <div id="bowl-area">
+      <div><div class="bowl"></div></div>
+      <div><div class="bowl water"></div></div>
+    </div>
+    <div id="cat-bed"></div>
+    <div id="door"><div id="door-handle"></div></div>
+    <div id="human">🧑</div>
+    <div id="cat-container">
+      <span id="cat-body">🐱</span>
+      <div id="cat-tail"></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button class="action-btn" data-action="meow">😾 Мяукнуть</button>
+    <button class="action-btn" data-action="rub">🥰 Ластиться</button>
+    <button class="action-btn" data-action="food">🍖 К миске</button>
+    <button class="action-btn" data-action="sleep">😴 Спать</button>
+    <button class="action-btn" data-action="door">🚪 Царапать дверь</button>
+    <button class="action-btn" data-action="toy">🧶 Игрушка</button>
+    <button class="action-btn" data-action="couch">🛋️ На диван</button>
+    <button class="action-btn" data-action="purr">💖 Мурчать</button>
+    <button class="action-btn" data-action="scratch">🔪 Точить когти</button>
+    <button class="action-btn" data-action="window">🪟 Смотреть в окно</button>
+    <button class="action-btn" data-action="hide">🙈 Прятаться</button>
+    <button class="action-btn" data-action="steal">🍗 Украсть еду</button>
+    <button class="action-btn" data-action="wake">⏰ Разбудить</button>
+    <button id="fast-forward-btn">⏩ Промотать</button>
+  </div>
+
+  <div id="overlay">
+    <h2>🐱 Жизнь Кота</h2>
+    <p>Ты — кот. Ты <b>не понимаешь</b> слов хозяина.<br>Но он что-то хочет... Догадайся по обрывкам фраз и иконкам!<br><br>🎯 <b>Цель:</b> продержаться <b>7 дней</b>, не истощив терпение хозяина.<br>⏩ Промывай время, когда сложно.<br>💡 Новые действия: точить когти, смотреть в окно, прятаться, воровать еду, будить!</p>
+    <button onclick="startGame()">🎮 Выжить неделю!</button>
+  </div>
+</div>
+
+<script>
+  (function() {
+    // DOM elements
+    const room = document.getElementById('room');
+    const catContainer = document.getElementById('cat-container');
+    const catBody = document.getElementById('cat-body');
+    const human = document.getElementById('human');
+    const periodText = document.getElementById('period-text');
+    const periodIcon = document.getElementById('period-icon');
+    const dayNum = document.getElementById('day-num');
+    const weekBarInner = document.getElementById('week-bar-inner');
+    const overlay = document.getElementById('overlay');
+    const barHunger = document.getElementById('bar-hunger');
+    const barEnergy = document.getElementById('bar-energy');
+    const barHappy = document.getElementById('bar-happy');
+    const barPatience = document.getElementById('bar-patience');
+    const actionBtns = document.querySelectorAll('.action-btn');
+    const fastForwardBtn = document.getElementById('fast-forward-btn');
+
+    // Game state
+    const state = {
+      day: 1,
+      period: 0,
+      periods: ['Утро','День','Вечер','Ночь'],
+      periodIcons: ['☀️','🌤️','🌅','🌙'],
+      hunger: 70,
+      energy: 80,
+      happiness: 75,
+      patience: 90,
+      score: 0,
+      currentRequest: null,
+      requestActive: false,
+      gameOver: false,
+      totalCorrect: 0,
+      totalWrong: 0,
+      catPos: 'default',
+      patienceTimer: null,
+    };
+
+    const WIN_DAY = 7;
+
+    // Requests
+    const requests = [
+      { id:'food', text:'Мррф... КУШАТЬ... брргл мряу? 🍖 Ням-ням!', icon:'🍖', correct:['food'], catPos:'at-bowl' },
+      { id:'treat', text:'Пррр ВКУСНЯШКА? Брргл ЛАКОМСТВО мряу! 🍬', icon:'🍬', correct:['food','steal'], catPos:'at-bowl' },
+      { id:'water', text:'Мррф ПИТЬ... брргл ВОДИЧКА мряу? 💧', icon:'💧', correct:['food'], catPos:'at-bowl' },
+      { id:'couch_off', text:'ГРРМФ! СЛЕЗЬ! Мряу ДИВАН брргл НЕЛЬЗЯ!', icon:'🛋️❌', correct:['meow','couch','scratch'], catPos:'on-couch' },
+      { id:'cuddle', text:'Пррр ОБНИМАТЬ... мррф ЛАСКА брргл ИДИ СЮДА 💕', icon:'💕', correct:['rub','purr'], catPos:'at-human' },
+      { id:'play', text:'Мряу ИГРАТЬ? Брргл ИГРУШКА мррф ПРИНЕСИ! 🧶', icon:'🧶', correct:['toy'], catPos:'default' },
+      { id:'outside', text:'Мррф ГУЛЯТЬ? Брргл ДВЕРЬ мряу НА УЛИЦУ!', icon:'🚪', correct:['door'], catPos:'at-door' },
+      { id:'sleep_time', text:'Мряу СПАТЬ... брргл КРОВАТКА пррр Бай-бай 😴', icon:'😴', correct:['sleep'], catPos:'at-bed' },
+      { id:'pet_me', text:'Пррр ГЛАДИТЬ... мррф РУЧКИ брргл ИДИ КО МНЕ ✋', icon:'✋', correct:['rub','purr','meow'], catPos:'at-human' },
+      { id:'off_table', text:'ГРР! СТОЛ! Брргл УБЕРИСЬ мряу! 😠', icon:'📦❌', correct:['meow','couch','hide'], catPos:'on-couch' },
+      { id:'greeting', text:'Мряу ПРИВЕТ! Брргл КИСЯ пррр КАК ДЕЛА? 👋', icon:'👋', correct:['rub','purr','meow'], catPos:'at-human' },
+      { id:'window_bird', text:'Пррр ПТИЧКА! Брргл СМОТРИ мряу! 🐦', icon:'🐦', correct:['window'], catPos:'default' },
+      { id:'scratch_post', text:'Мррф КОГТИ ТОЧИТЬ? Брргл ДРАТЬ ДИВАН? 😼', icon:'🔪', correct:['scratch','couch'], catPos:'on-couch' },
+      { id:'hide_seek', text:'Мряу ГДЕ ТЫ? Брргл ПРЯТКИ пррр ИЩУ! 🙈', icon:'🙈', correct:['hide'], catPos:'default' },
+      { id:'morning_wake', text:'Мррф ВСТАВАЙ! Брргл БУДИЛЬНИК мряу! ⏰', icon:'⏰', correct:['wake','meow'], catPos:'at-human' },
+      { id:'steal_anger', text:'ГРР! УКРАЛ! Брргл ВОРЮГА мряу! 🍗', icon:'🍗❌', correct:['hide','meow'], catPos:'default' },
+    ];
+
+    const periodPool = {
+      0: ['food','greeting','water','pet_me','morning_wake','treat'],
+      1: ['play','outside','couch_off','off_table','window_bird','scratch_post','water'],
+      2: ['cuddle','food','pet_me','outside','hide_seek','steal_anger'],
+      3: ['sleep_time','cuddle'],
+    };
+
+    function getRandomRequest() {
+      const pool = periodPool[state.period] || periodPool[0];
+      const id = pool[Math.floor(Math.random() * pool.length)];
+      return requests.find(r=>r.id===id);
+    }
+
+    function updateUI() {
+      barHunger.style.width = state.hunger+'%';
+      barEnergy.style.width = state.energy+'%';
+      barHappy.style.width = state.happiness+'%';
+      barPatience.style.width = state.patience+'%';
+      periodText.textContent = state.periods[state.period];
+      periodIcon.textContent = state.periodIcons[state.period];
+      dayNum.textContent = state.day;
+      weekBarInner.style.width = (state.day / WIN_DAY * 100) + '%';
+    }
+
+    function updateRoomAtmosphere() {
+      room.classList.remove('night','evening');
+      if (state.period===3) room.classList.add('night');
+      if (state.period===2) room.classList.add('evening');
+    }
+
+    function moveCat(pos) {
+      catContainer.classList.remove('at-bowl','on-couch','at-bed','at-door','at-human','jump');
+      if (pos && pos!=='default') catContainer.classList.add(pos);
+      state.catPos = pos || 'default';
+    }
+
+    function clearBubbles() {
+      document.querySelectorAll('.bubble.dynamic').forEach(b=>b.remove());
+    }
+
+    function showBubble(type, text, parentEl, duration=2800) {
+      clearBubbles();
+      const bubble = document.createElement('div');
+      bubble.className = `bubble dynamic ${type}-bubble`;
+      bubble.textContent = text;
+      const roomRect = room.getBoundingClientRect();
+      const pRect = parentEl.getBoundingClientRect();
+      const left = pRect.left - roomRect.left + pRect.width/2;
+      const top = pRect.top - roomRect.top - 15;
+      bubble.style.left = left+'px';
+      bubble.style.top = top+'px';
+      bubble.style.transform = 'translate(-50%, -100%)';
+      room.appendChild(bubble);
+      if (duration>0) setTimeout(()=> bubble.remove(), duration);
+      return bubble;
+    }
+
+    function popScore(text, color) {
+      const pop = document.createElement('div');
+      pop.className = 'score-popup';
+      pop.textContent = text;
+      pop.style.color = color;
+      pop.style.position = 'absolute';
+      pop.style.zIndex = '20';
+      pop.style.fontWeight = 'bold';
+      pop.style.fontSize = '20px';
+      pop.style.pointerEvents = 'none';
+      const rect = catContainer.getBoundingClientRect();
+      const roomRect = room.getBoundingClientRect();
+      pop.style.left = (rect.left - roomRect.left + 20)+'px';
+      pop.style.top = (rect.top - roomRect.top - 10)+'px';
+      pop.style.animation = 'floatUp 1.2s ease forwards';
+      room.appendChild(pop);
+      setTimeout(()=> pop.remove(), 1300);
+    }
+
+    function flashButton(action, type) {
+      const btn = document.querySelector(`.action-btn[data-action="${action}"]`);
+      if (btn) {
+        btn.classList.add(type+'-flash');
+        setTimeout(()=> btn.classList.remove(type+'-flash'), 500);
+      }
+    }
+
+    function animateHuman(anim) {
+      human.classList.remove('shake','bounce');
+      void human.offsetWidth;
+      human.classList.add(anim);
+      setTimeout(()=> human.classList.remove(anim), 500);
+    }
+
+    function catJumpAnim() {
+      catContainer.classList.add('jump');
+      setTimeout(()=> catContainer.classList.remove('jump'), 500);
+    }
+
+    function startPatienceTimer() {
+      clearPatienceTimer();
+      state.patienceTimer = setInterval(() => {
+        if (state.gameOver || !state.requestActive) return;
+        state.patience = Math.max(0, state.patience - 1);
+        updateUI();
+        if (state.patience <= 0) endGame('lose');
+      }, 1800);
+    }
+
+    function clearPatienceTimer() {
+      if (state.patienceTimer) clearInterval(state.patienceTimer);
+      state.patienceTimer = null;
+    }
+
+    function triggerRequest() {
+      if (state.gameOver) return;
+      clearBubbles();
+      const req = getRandomRequest();
+      state.currentRequest = req;
+      state.requestActive = true;
+      moveCat(req.catPos || 'default');
+      showBubble('human', req.text, human, 0);
+      showBubble('thought', req.icon, human, 0);
+      startPatienceTimer();
+    }
+
+    function advancePeriod() {
+      clearPatienceTimer();
+      state.period++;
+      if (state.period > 3) {
+        state.period = 0;
+        state.day++;
+        state.hunger = Math.max(5, state.hunger - 18);
+        state.energy = Math.min(100, state.energy + 25);
+        state.happiness = Math.max(5, state.happiness - 8);
+        state.patience = Math.min(100, state.patience + 12);
+      }
+      state.hunger = Math.max(0, state.hunger - 7);
+      state.energy = Math.max(0, state.energy - 5);
+      state.happiness = Math.max(0, state.happiness - 3);
+      updateUI();
+      updateRoomAtmosphere();
+      moveCat('default');
+      clearBubbles();
+      state.requestActive = false;
+      state.currentRequest = null;
+
+      if (state.patience <= 0) { endGame('lose'); return; }
+      if (state.hunger <= 0 || state.energy <= 0) {
+        state.happiness = Math.max(0, state.happiness - 15);
+        if (state.happiness <= 0 && state.day > 2) { endGame('lose'); return; }
+      }
+      if (state.day > WIN_DAY) { endGame('win'); return; }
+      updateUI();
+      setTimeout(()=> { if (!state.gameOver && !state.requestActive) triggerRequest(); }, 700);
+    }
+
+    function handleAction(action) {
+      if (state.gameOver) return;
+      if (!state.requestActive) {
+        moveCat(action==='food'?'at-bowl':action==='sleep'?'at-bed':action==='door'?'at-door':action==='couch'?'on-couch':action==='rub'?'at-human':'default');
+        catJumpAnim();
+        showBubble('cat','Мяу? 🤔', catContainer, 1600);
+        if (Math.random()<0.6) setTimeout(()=> triggerRequest(), 900);
+        return;
+      }
+
+      const req = state.currentRequest;
+      const correct = req.correct.includes(action);
+      moveCat(action==='food'?'at-bowl':action==='sleep'?'at-bed':action==='door'?'at-door':action==='couch'?'on-couch':action==='rub'?'at-human':'default');
+      catJumpAnim();
+
+      if (correct) {
+        state.score += 12 + Math.floor(state.patience/10);
+        state.happiness = Math.min(100, state.happiness + 18);
+        state.patience = Math.min(100, state.patience + 10);
+        state.totalCorrect++;
+        flashButton(action,'correct');
+        animateHuman('bounce');
+        showBubble('cat','Муррр! 😸💖', catContainer, 2000);
+        popScore('+12 🎯','#4caf50');
+        if (req.id==='food'||req.id==='treat') state.hunger = Math.min(100, state.hunger+25);
+        if (req.id==='sleep_time') state.energy = Math.min(100, state.energy+30);
+        if (req.id==='water') state.hunger = Math.min(100, state.hunger+12);
+        clearPatienceTimer();
+        state.requestActive = false;
+        state.currentRequest = null;
+        clearBubbles();
+        updateUI();
+        setTimeout(()=> { if (!state.gameOver && !state.requestActive) triggerRequest(); }, 1300);
+      } else {
+        state.patience = Math.max(0, state.patience - 14);
+        state.happiness = Math.max(0, state.happiness - 6);
+        state.totalWrong++;
+        flashButton(action,'wrong');
+        animateHuman('shake');
+        showBubble('cat','Мяу??? 😿', catContainer, 1800);
+        popScore('-14 💔','#e53935');
+        updateUI();
+        if (state.patience <= 0) { setTimeout(()=> endGame('lose'), 1000); return; }
+      }
+    }
+
+    function fastForward() {
+      if (state.gameOver) return;
+      clearPatienceTimer();
+      state.requestActive = false;
+      state.currentRequest = null;
+      clearBubbles();
+      showBubble('cat','💨 Вжух! Время летит...', catContainer, 1400);
+      state.hunger = Math.max(0, state.hunger - 4);
+      state.energy = Math.max(0, state.energy - 3);
+      state.patience = Math.min(100, state.patience + 2);
+      updateUI();
+      moveCat('default');
+      setTimeout(()=> advancePeriod(), 900);
+    }
+
+    function endGame(result) {
+      state.gameOver = true;
+      clearPatienceTimer();
+      clearBubbles();
+      moveCat('default');
+      const title = result==='win' ? '🏆 Поздравляем!' : '😿 Хозяин расстроен...';
+      const msg = result==='win' 
+        ? `Ты выжил целую неделю! День ${state.day}. Счёт: ${state.score}. Угадано: ${state.totalCorrect}. Настоящий кошачий гений!` 
+        : `Терпение лопнуло... День ${state.day}. Счёт: ${state.score}. Ошибок: ${state.totalWrong}. Попробуй снова!`;
+      overlay.classList.remove('hidden');
+      overlay.querySelector('h2').textContent = title;
+      overlay.querySelector('p').textContent = msg;
+      overlay.querySelector('button').textContent = '🔄 Играть снова';
+      overlay.querySelector('button').onclick = restartGame;
+    }
+
+    function startGame() {
+      overlay.classList.add('hidden');
+      resetState();
+      updateUI();
+      updateRoomAtmosphere();
+      moveCat('default');
+      clearBubbles();
+      setTimeout(()=> triggerRequest(), 600);
+    }
+
+    function restartGame() {
+      resetState();
+      updateUI();
+      updateRoomAtmosphere();
+      moveCat('default');
+      clearBubbles();
+      overlay.classList.add('hidden');
+      setTimeout(()=> triggerRequest(), 600);
+    }
+
+    function resetState() {
+      state.day = 1;
+      state.period = 0;
+      state.hunger = 70;
+      state.energy = 80;
+      state.happiness = 75;
+      state.patience = 90;
+      state.score = 0;
+      state.currentRequest = null;
+      state.requestActive = false;
+      state.gameOver = false;
+      state.totalCorrect = 0;
+      state.totalWrong = 0;
+      state.catPos = 'default';
+      clearPatienceTimer();
+    }
+
+    // Make startGame globally accessible for the inline onclick
+    window.startGame = startGame;
+
+    // Event binding
+    actionBtns.forEach(btn => {
+      btn.addEventListener('click', () => handleAction(btn.dataset.action));
+    });
+    fastForwardBtn.addEventListener('click', fastForward);
+    catContainer.addEventListener('click', (e) => { e.stopPropagation(); handleAction('meow'); });
+    human.addEventListener('click', (e) => { e.stopPropagation(); handleAction('rub'); });
+
+    document.addEventListener('keydown', (e) => {
+      if (state.gameOver) return;
+      const key = e.key.toLowerCase();
+      if (key === 'f' || key === ' ') { e.preventDefault(); fastForward(); return; }
+      const map = { '1':'meow','2':'rub','3':'food','4':'sleep','5':'door','6':'toy','7':'couch','8':'purr','9':'scratch','0':'window','q':'hide','w':'steal','e':'wake' };
+      if (map[key]) { e.preventDefault(); handleAction(map[key]); }
+    });
+
+    // Floating particles
+    function createParticles() {
+      for (let i=0; i<8; i++) {
+        const p = document.createElement('div');
+        p.className = 'floating-particle';
+        const size = 4 + Math.random()*8;
+        p.style.width = size+'px';
+        p.style.height = size+'px';
+        p.style.left = Math.random()*90+'%';
+        p.style.bottom = Math.random()*60+'%';
+        p.style.animationDuration = 5+Math.random()*7+'s';
+        p.style.animationDelay = Math.random()*5+'s';
+        room.appendChild(p);
+      }
+    }
+
+    createParticles();
+    updateUI();
+    updateRoomAtmosphere();
+  })();
+</script>
+</body>
+</html>
